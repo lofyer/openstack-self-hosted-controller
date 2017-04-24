@@ -1,0 +1,66 @@
+0. Setup shared storage filesystem with controller vm in it.
+
+1. Setup etcd in hosts and controller.
+
+2. Add key/value to etcd like this:
+
+    openstack/controller_ip
+    openstack/current_host
+    openstack/gateway
+    openstack/service_health
+    openstack/next_host
+    openstack/timestamp
+
+3. Add a service in controller with these functions:
+
+    Ping gateway OK?
+    Service check OK?
+    Write service_health.
+
+    If OK and timestamp > 1 minites:
+        
+        Write timestamp
+
+    else:
+
+        DO NOT Write timestamp
+
+3. Add a service in hosts with these functions:
+
+    Ping gateway OK?
+
+        I'm out of service, stop service.
+
+    Read service_health OK?
+        
+        If I'm current_host, restart controller vm once.
+        If still not good, 
+
+    Ping controller OK?
+    Ping current_host OK?
+
+    If one of above is no:
+
+        Ping next host OK?
+
+        If OK:
+
+            If I'm next_host:
+
+                start the controller vm on me.
+                Write current_host with my IP.
+
+            else:
+
+                Wait
+
+        else:
+
+            If timestamp > 5 minites:
+
+                Write timestamp with current_time
+                Write me to next_host
+
+            else:
+
+                Wait
